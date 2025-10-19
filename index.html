@@ -16,7 +16,7 @@
 
   <style>
     :root{
-      --header-h: 64px;
+      --header-h: clamp(72px, 9vw, 116px);
       --widget-offset-top: 0px; /* ustawiane dynamicznie na mobilu podczas ekspansji */
       --bg-top:#f6f8ff; --bg-mid:#ecf1ff; --bg-bot:#e7ecfb;
       --ink:#0f1733; --brand:#3558e6; --stroke: rgba(16,23,51,.12);
@@ -45,7 +45,7 @@
       border-bottom:1px solid rgba(53,88,230,.28);
       box-shadow:0 2px 8px rgba(10,20,40,.06);
     }
-    header .logo{ height: calc(var(--header-h) - 20px); width:auto; display:block; }
+    header .logo{ height: calc(var(--header-h) - 12px); width:auto; display:block; image-rendering:auto; }
 
     /* Mobil: nagłówek całkowicie kryjący */
     @media (max-width: 640px){
