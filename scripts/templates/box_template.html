@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Box __BOX_ID__ – katalog</title>
+<style>
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;margin:24px;}
+input,select{padding:8px 10px;margin:6px 8px 12px 0;}
+table{border-collapse:collapse;width:100%;}
+th,td{border:1px solid #ddd;padding:8px;vertical-align:top;}
+th{background:#f3f4f6;}
+.tag{display:inline-block;background:#eef;border:1px solid #ccd;border-radius:6px;padding:2px 6px;margin:0 4px 4px 0;}
+small.mono{font-family:ui-monospace,Menlo,Consolas,monospace;color:#666}
+</style>
+</head>
+<body>
+<h1>Box __BOX_ID__</h1>
+<div><small class="mono">__SRC_URL__</small></div>
+<div>
+  <input id="q" placeholder="Szukaj (en/no/kolory/materiały/opis/markings)" size="40"/>
+  <select id="shape"><option value="">(shape)</option></select>
+  <button id="btn">Filtruj</button>
+  <span id="stats"></span>
+</div>
+<div id="tbl"></div>
+<script>
+const DATA = __DATA__;
+const objects = DATA.objects || [];
+function mkTag(x){return `<span class="tag">${x}</span>`;}
+function render(rows){
+  const th = `<tr>
+    <th>en / no</th><th>shape</th><th>colors</th><th>materials</th>
+    <th>size (cm)</th><th>qty est.</th><th>conf.</th><th>markings</th>
+    <th>images</th><th>description</th></tr>`;
+  const trs = rows.map(o=>{
+    const colors=(o.colors||[]).map(mkTag).join(' ');
+    const mats=(o.materials||[]).map(mkTag).join(' ');
+    const marks=(o.markings||[]).map(mkTag).join(' ');
+    const imgs=(o.images||[]).map(x=>mkTag(x)).join(' ');
+    const size=o.approx_size_cm?JSON.stringify(o.approx_size_cm):'';
+    const conf=typeof o.confidence_avg==='number'?o.confidence_avg.toFixed(3):'';
+    return `<tr>
+      <td><b>${(o.en||'')}</b><br/>${(o.no||'')}</td>
+      <td>${o.shape||''}</td>
+      <td>${colors}</td>
+      <td>${mats}</td>
+      <td>${size}</td>
+      <td>${o.quantity_estimate??''}</td>
+      <td>${conf}</td>
+      <td>${marks}</td>
+      <td>${imgs}</td>
+      <td>${(o.description_en||'')}<br/><i>${(o.description_no||'')}</i></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('tbl').innerHTML = `<table>${th}${trs}</table>`;
+  document.getElementById('stats').textContent = `Wyników: ${rows.length} / ${objects.length}`;
+}
+function filter(){
+  const q=(document.getElementById('q').value||'').toLowerCase().trim();
+  const shp=(document.getElementById('shape').value||'').toLowerCase();
+  let rows=objects.slice();
+  if(shp) rows=rows.filter(o=>String(o.shape||'').toLowerCase()===shp);
+  if(q){
+    rows=rows.filter(o=>{
+      const hay=[o.en,o.no,o.shape,...(o.colors||[]),...(o.materials||[]),...(o.markings||[]),o.description_en,o.description_no].filter(Boolean).join(' ').toLowerCase();
+      return hay.includes(q);
+    });
+  }
+  render(rows);
+}
+(function init(){
+  const shapes=[...new Set(objects.map(o=>(o.shape||'').toLowerCase()).filter(Boolean))].sort();
+  const sel=document.getElementById('shape');
+  for(const s of shapes){ const opt=document.createElement('option'); opt.value=s; opt.textContent=s; sel.appendChild(opt); }
+  document.getElementById('btn').onclick=filter;
+  document.getElementById('q').onkeydown=(e)=>{ if(e.key==='Enter') filter(); };
+  render(objects);
+})();
+</script>
+</body>
+</html>
