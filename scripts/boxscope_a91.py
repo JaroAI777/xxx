@@ -308,7 +308,27 @@ def _image_from_local_path(path: Path) -> ImageInfo:
     return ImageInfo(api_url=data_url, reference=path.name)
 
 
+def _ascii_escape(text: str) -> str:
+    r"""Return *text* with non-ASCII characters escaped for transport.
+
+    Some execution environments configure ``PYTHONIOENCODING`` (or the locale)
+    to ``latin-1``/``ISO-8859-1``.  When those environments forward the model
+    prompt to the OpenAI API using :mod:`urllib`, any non-ASCII characters in
+    the payload may trigger ``UnicodeEncodeError`` before the request is sent.
+
+    The helper mirrors JSON's escaping rules so that the downstream model still
+    receives the full expression (with ``\uXXXX`` escapes) while keeping the
+    transport payload strictly ASCII.
+    """
+
+    # ``json.dumps`` with ``ensure_ascii=True`` mirrors the escaping behaviour
+    # used by the API.  Stripping the surrounding quotes yields an ASCII-only
+    # representation suitable for embedding in human-readable strings.
+    return json.dumps(text, ensure_ascii=True)[1:-1]
+
+
 def build_system_prompt(ignore_regex: str) -> str:
+    safe_regex = _ascii_escape(ignore_regex)
     return (
         "You are a precise vision tagging assistant. Return ONLY valid JSON (no prose). "
         "All images/tiles/rotations belong to ONE container/box; catalog its content. "
@@ -317,7 +337,8 @@ def build_system_prompt(ignore_regex: str) -> str:
         "Be exhaustive and include small items. "
         "CRITICAL: EXCLUDE any container or environment items (box/bin/tote/crate/container/organizer/tray/divider/"
         "insert/lid/cover/shelf/drawer/bag/ziploc/wrap/foam/padding/label/barcode/QR/background/surface/floor/table/desk/workbench/paper). "
-        f"Ignore items matching this regex: {ignore_regex}"
+        "Ignore items matching this regex (JSON escaped): "
+        f"{safe_regex}"
     )
 
 
